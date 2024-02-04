@@ -125,6 +125,30 @@ class Board:
             print("Invalid integer")
             return "Z"
 
+class Player:
+    def __init__(self, name: str):
+        self.name = name
+        self.board = Board()
+        self.opponent_board = Board()
+        self.ships_alive: list[ShipType] = [ShipType.PLANE_CARRIER, ShipType.BATTLESHIP, ShipType.CRUISER, ShipType.SUBMARINE, ShipType.DESTROYER]
+        self.ships_placed: list[ShipType] = []
+        self.ships_destroyed: list[ShipType] = []
+    
+    def place_ship(self, ship_type: ShipType, direction: Direction, start_coordinate: str) -> None:
+        if ship_type in self.ships_placed:
+            print("Ship already placed")
+            return
+        self.ships_placed.append(ship_type)
+        self.board.add_ship(ship_type, direction, start_coordinate)
+
+    def attack(self, coordinate: str, opponent_board: Board) -> None:
+        pass
+
+    def is_winner(self, opponent: 'Player') -> bool:
+        if len(opponent.ships_destroyed) == 5:
+            return True
+        return False
+
 def main():
     board = Board()
     board.add_ship(ShipType.PLANE_CARRIER, Direction.HORIZONTAL, "A1")
