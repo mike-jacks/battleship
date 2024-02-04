@@ -6,6 +6,12 @@ class Coordinate:
     x: str
     y: int
 
+class TextColor(Enum):
+    RED = "\033[91m"
+    WHITE = "\033[97m"
+    YELLOW = "\033[93m"
+    BLUE = "\033[94m"
+    DEFAULT = "\033[0m"
 class ShipType(Enum):
     PLANE_CARRIER = 5
     BATTLESHIP = 4
@@ -45,7 +51,7 @@ class Board:
                 try:
                     for ship in self.ship_locations:
                         if coordinate in self.ship_locations[ship]:
-                            print(f"[{ship.name[0]}]", end="")
+                            print(f"[{TextColor.BLUE.value}{ship.name[0]}{TextColor.DEFAULT.value}]", end="")
                             ship_found = True
                             break
                         else:
@@ -136,7 +142,7 @@ class Player:
     
     def place_ship(self, ship_type: ShipType, direction: Direction, start_coordinate: str) -> None:
         if ship_type in self.ships_placed:
-            print("Ship already placed")
+            print(f"{ship_type.name.capitalize()} is already placed")
             return
         self.ships_placed.append(ship_type)
         self.board.add_ship(ship_type, direction, start_coordinate)
