@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Tuple
+import os
+from time import sleep
 
 @dataclass(frozen=True)
 class Coordinate:
@@ -52,10 +54,12 @@ class Player:
             y = int(coordinate_str[1:])
         except ValueError:
             print("Invalid input")
+            sleep(2)
             return
         coordinate = Coordinate(x, y)
         if coordinate in opponent.board.hit_locations or coordinate in opponent.board.miss_locations:
             print("You have already attacked this location")
+            sleep(2)
             return
         opponent_is_hit, ship = opponent.board.is_hit(coordinate, opponent.ships_alive)
         if opponent_is_hit:
@@ -63,6 +67,7 @@ class Player:
                 opponent.ships_alive.remove(ship)
                 opponent.ships_destroyed.append(ship)
                 print(f"{ship.name.capitalize()} has been destroyed")
+                sleep(2)
             return
         if opponent.board.is_miss(Coordinate(x, y)):
             return
@@ -91,9 +96,11 @@ class Board:
         return board
     
     def print_board(self, player: Player, opponent: Player) -> None:
+        clear_screen()
         print(f"\n{player.name}'s board:                      {opponent.name}'s board: ")
         print(f"    A  B  C  D  E  F  G  H  I  J          A  B  C  D  E  F  G  H  I  J")
         row_number = 1
+        ship_found = False
         for row in self.board_coordinates:
             if row_number < 10:
                 print(f" {row_number} ", end="")
@@ -218,6 +225,7 @@ class Board:
                 self.ship_locations[ship].remove(coordinate)
                 self.hit_locations.append(coordinate)
                 print(f"{ship.name.capitalize()} has been hit")
+                sleep(2)
                 return (True, ship)
         return (False, ShipType.NULL)
     
@@ -225,6 +233,7 @@ class Board:
         if coordinate not in self.ship_locations:
             self.miss_locations.append(coordinate)
             print("Miss")
+            sleep(2)
             return True
         return False
     
@@ -234,7 +243,9 @@ class Board:
         return False
         
 
-
+def clear_screen():
+    os.system('cls' if os.name == 'nt' else 'clear')
+    
 
 
 def place_ships(player: Player, opponent: Player):
@@ -279,6 +290,7 @@ def main():
     player1 = Player("Player1")
     player2 = Player("Player2")
     print("Welcome to Battle Ship!")
+    Board().print_board(player1, player2)
     place_ships(player1, player2)
     place_ships(player2, player1)
     
