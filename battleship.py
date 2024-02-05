@@ -1,32 +1,83 @@
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Tuple
 
 @dataclass(frozen=True)
 class Coordinate:
     x: str
     y: int
-
+     
 class TextColor(Enum):
     RED = "\033[91m"
     WHITE = "\033[97m"
     YELLOW = "\033[93m"
     BLUE = "\033[94m"
+    GREEN = "\033[92m"
     DEFAULT = "\033[0m"
 class ShipType(Enum):
-    PLANE_CARRIER = 5
-    BATTLESHIP = 4
-    CRUISER = 3
-    SUBMARINE = 3
-    DESTROYER = 2
+    PLANE_CARRIER = {'plane_carrier':5}
+    BATTLESHIP = {'battleship':4}
+    CRUISER =  {'cruiser':3}
+    SUBMARINE = {'submarine':3}
+    DESTROYER = {'destroyer':2}
+    NULL = {'null':0}
 
 class Direction(Enum):
     HORIZONTAL = 1
     VERTICAL = 2
 
+class Player:
+    def __init__(self, name: str):
+        self.name = name
+        self.board = Board()
+        self.opponent_board = Board()
+        self.ships_alive: list[ShipType] = [ShipType.PLANE_CARRIER, ShipType.BATTLESHIP, ShipType.CRUISER, ShipType.SUBMARINE, ShipType.DESTROYER]
+        self.ships_placed: list[ShipType] = []
+        self.ships_destroyed: list[ShipType] = []
+    
+    def place_ship(self, ship_type: ShipType, direction: Direction, start_coordinate: str) -> None:
+        if ship_type in self.ships_placed:
+            print(f"{ship_type.name.capitalize()} is already placed")
+            return
+        self.ships_placed.append(ship_type)
+        self.board.add_ship(ship_type, direction, start_coordinate)
+    
+    def get_attack_coordinate_input(self) -> str:
+        coordinate = input(f"{self.name}, enter the coordinate to attack: ").upper()
+        return coordinate
+
+    def attack(self, coordinate_str: str, opponent: 'Player'):
+        try:
+            x = coordinate_str[0]
+            y = int(coordinate_str[1:])
+        except ValueError:
+            print("Invalid input")
+            return
+        coordinate = Coordinate(x, y)
+        if coordinate in opponent.board.hit_locations or coordinate in opponent.board.miss_locations:
+            print("You have already attacked this location")
+            return
+        opponent_is_hit, ship = opponent.board.is_hit(coordinate, opponent.ships_alive)
+        if opponent_is_hit:
+            if opponent.board.is_ship_destroyed(ship):
+                opponent.ships_alive.remove(ship)
+                opponent.ships_destroyed.append(ship)
+                print(f"{ship.name.capitalize()} has been destroyed")
+            return
+        if opponent.board.is_miss(Coordinate(x, y)):
+            return
+
+    def is_winner(self, opponent: 'Player') -> bool:
+        if len(opponent.ships_destroyed) == 5:
+            return True
+        return False
 class Board:
     def __init__(self):
         self.board_coordinates = self.generate_coordinatee_board()
         self.ship_locations = {}
+        self.hit_locations = []
+        self.miss_locations = []
+        
 
     def generate_coordinatee_board(self):
         x = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
@@ -39,19 +90,49 @@ class Board:
             board.append(row)
         return board
     
-    def print_board(self):
-        print("    A  B  C  D  E  F  G  H  I  J")
+    def print_board(self, player: Player, opponent: Player) -> None:
+        print(f"\n{player.name}'s board:                      {opponent.name}'s board: ")
+        print(f"    A  B  C  D  E  F  G  H  I  J          A  B  C  D  E  F  G  H  I  J")
         row_number = 1
         for row in self.board_coordinates:
             if row_number < 10:
-                print(f"{row_number}  ", end="")
+                print(f" {row_number} ", end="")
             else:
                 print(f"{row_number} ", end="")
             for coordinate in row:
                 try:
                     for ship in self.ship_locations:
+                        if coordinate in self.hit_locations:
+                            print(f"[{TextColor.RED.value}X{TextColor.DEFAULT.value}]", end="")
+                            ship_found = True
+                            break
+                        if coordinate in self.miss_locations:
+                            print(f"[{TextColor.BLUE.value}-{TextColor.DEFAULT.value}]", end="")
+                            ship_found = True
+                            break
                         if coordinate in self.ship_locations[ship]:
-                            print(f"[{TextColor.BLUE.value}{ship.name[0]}{TextColor.DEFAULT.value}]", end="")
+                            print(f"[{TextColor.GREEN.value}{ship.name[0]}{TextColor.DEFAULT.value}]", end="")
+                            ship_found = True
+                            break
+                        else:
+                            ship_found = False
+                    if not ship_found:
+                        print("[ ]", end="")
+                except Exception as e:
+                    print(e)
+            if row_number < 10:
+                print(f"      {row_number}", end=" ")
+            else:
+                print(f"     {row_number}", end=" ")
+            for coordinate in opponent.board.board_coordinates[row_number - 1]:
+                try:
+                    for ship in opponent.board.ship_locations:
+                        if coordinate in opponent.board.hit_locations:
+                            print(f"[{TextColor.RED.value}X{TextColor.DEFAULT.value}]", end="")
+                            ship_found = True
+                            break
+                        if coordinate in opponent.board.miss_locations:
+                            print(f"[{TextColor.BLUE.value}-{TextColor.DEFAULT.value}]", end="")
                             ship_found = True
                             break
                         else:
@@ -64,9 +145,9 @@ class Board:
             row_number += 1
 
     def add_ship(self, ship_type: ShipType, direction: Direction, start_coordinate: str) -> None:
-        ship_length = ship_type.value
+        ship_length = ship_type.value[ship_type.name.lower()]
         x = start_coordinate[0]
-        y = int(start_coordinate[1])
+        y = int(start_coordinate[1:])
         if direction == Direction.HORIZONTAL:
             ship_coordinates = []
             for i in range(ship_length):
@@ -130,38 +211,90 @@ class Board:
         else:
             print("Invalid integer")
             return "Z"
-
-class Player:
-    def __init__(self, name: str):
-        self.name = name
-        self.board = Board()
-        self.opponent_board = Board()
-        self.ships_alive: list[ShipType] = [ShipType.PLANE_CARRIER, ShipType.BATTLESHIP, ShipType.CRUISER, ShipType.SUBMARINE, ShipType.DESTROYER]
-        self.ships_placed: list[ShipType] = []
-        self.ships_destroyed: list[ShipType] = []
     
-    def place_ship(self, ship_type: ShipType, direction: Direction, start_coordinate: str) -> None:
-        if ship_type in self.ships_placed:
-            print(f"{ship_type.name.capitalize()} is already placed")
-            return
-        self.ships_placed.append(ship_type)
-        self.board.add_ship(ship_type, direction, start_coordinate)
-
-    def attack(self, coordinate: str, opponent_board: Board) -> None:
-        pass
-
-    def is_winner(self, opponent: 'Player') -> bool:
-        if len(opponent.ships_destroyed) == 5:
+    def is_hit(self, coordinate: Coordinate, ships: list[ShipType]) -> Tuple[bool, ShipType]:
+        for ship in ships:
+            if coordinate in self.ship_locations[ship]:
+                self.ship_locations[ship].remove(coordinate)
+                self.hit_locations.append(coordinate)
+                print(f"{ship.name.capitalize()} has been hit")
+                return (True, ship)
+        return (False, ShipType.NULL)
+    
+    def is_miss(self, coordinate: Coordinate) -> bool:
+        if coordinate not in self.ship_locations:
+            self.miss_locations.append(coordinate)
+            print("Miss")
             return True
         return False
+    
+    def is_ship_destroyed(self, ship: ShipType) -> bool:
+        if len(self.ship_locations[ship]) == 0:
+            return True
+        return False
+        
+
+
+
+
+def place_ships(player: Player, opponent: Player):
+    while len(player.ships_placed) < 5:
+        for ship in player.ships_alive:
+            coordinate = "A1"
+            direction = Direction.HORIZONTAL
+            while True:
+                if ship in player.ships_placed:
+                    break
+                try:
+                    coordinate_answer = input(f"{player.name}, where would you like to place your {ship.name.capitalize()}? Please give coordinates: ").upper()
+                    coordinate_input = Coordinate(coordinate_answer[0],int(coordinate_answer[1:]))
+                    if coordinate_input in [coordinate for row in player.board.board_coordinates for coordinate in row]:
+                        coordinate = coordinate_answer
+                        break
+                    else:
+                        print("Invalid coordinates")
+                        continue
+                except ValueError:
+                    print("Invalid input")
+                    continue
+            while True:
+                try:
+                    direction_answer = input(f"Would you like to place your {ship.name.capitalize()} ship horizontally or vertically?: ").upper()
+                    if direction_answer == "H" or direction_answer == "HORIZONTAL" or direction_answer == "HORIZONTALLY":
+                        direction = Direction.HORIZONTAL
+                        break
+                    elif direction_answer == "V" or direction_answer == "VERTICAL" or direction_answer == "VERTICALLY":
+                        direction = Direction.VERTICAL
+                        break
+                    else:
+                        print("Invalid direction")
+                        continue
+                except ValueError:
+                    print("Invalid input")
+                    continue
+            player.place_ship(ship, direction, coordinate)
+            player.board.print_board(player, opponent)
 
 def main():
-    board = Board()
-    board.add_ship(ShipType.PLANE_CARRIER, Direction.HORIZONTAL, "A1")
-    board.add_ship(ShipType.BATTLESHIP, Direction.VERTICAL, "B2")
-    board.add_ship(ShipType.CRUISER, Direction.HORIZONTAL, "D4")
-    print(board.print_board())
-
+    player1 = Player("Player1")
+    player2 = Player("Player2")
+    print("Welcome to Battle Ship!")
+    place_ships(player1, player2)
+    place_ships(player2, player1)
+    
+    game_in_progress = True
+    while game_in_progress:
+        player1.board.print_board(player1, player2)
+        player1.attack(player1.get_attack_coordinate_input(), player2)
+        if player1.is_winner(player2):
+            print(f"{player1.name} wins!")
+            break
+        player2.board.print_board(player2, player1)
+        player2.attack(player2.get_attack_coordinate_input(), player1)
+        if player2.is_winner(player1):
+            print(f"{player2.name} wins!")
+            break
+    
 if __name__ == "__main__":
     main()
     
