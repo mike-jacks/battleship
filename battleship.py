@@ -100,7 +100,7 @@ class Board:
         print(f"\n{player.name}'s board:                      {opponent.name}'s board: ")
         print(f"    A  B  C  D  E  F  G  H  I  J          A  B  C  D  E  F  G  H  I  J")
         row_number = 1
-        ship_found = False
+        is_not_empty_space = False
         for row in self.board_coordinates:
             if row_number < 10:
                 print(f" {row_number} ", end="")
@@ -110,20 +110,20 @@ class Board:
                 try:
                     for ship in self.ship_locations:
                         if coordinate in self.hit_locations:
-                            print(f"[{TextColor.RED.value}X{TextColor.DEFAULT.value}]", end="")
-                            ship_found = True
+                            print(f"[{TextColor.RED.value}*{TextColor.DEFAULT.value}]", end="")
+                            is_not_empty_space = True
                             break
                         if coordinate in self.miss_locations:
                             print(f"[{TextColor.BLUE.value}-{TextColor.DEFAULT.value}]", end="")
-                            ship_found = True
+                            is_not_empty_space = True
                             break
                         if coordinate in self.ship_locations[ship]:
                             print(f"[{TextColor.GREEN.value}{ship.name[0]}{TextColor.DEFAULT.value}]", end="")
-                            ship_found = True
+                            is_not_empty_space = True
                             break
                         else:
-                            ship_found = False
-                    if not ship_found:
+                            is_not_empty_space = False
+                    if not is_not_empty_space:
                         print("[ ]", end="")
                 except Exception as e:
                     print(e)
@@ -136,15 +136,15 @@ class Board:
                     for ship in opponent.board.ship_locations:
                         if coordinate in opponent.board.hit_locations:
                             print(f"[{TextColor.RED.value}X{TextColor.DEFAULT.value}]", end="")
-                            ship_found = True
+                            is_not_empty_space = True
                             break
                         if coordinate in opponent.board.miss_locations:
                             print(f"[{TextColor.BLUE.value}-{TextColor.DEFAULT.value}]", end="")
-                            ship_found = True
+                            is_not_empty_space = True
                             break
                         else:
-                            ship_found = False
-                    if not ship_found:
+                            is_not_empty_space = False
+                    if not is_not_empty_space:
                         print("[ ]", end="")
                 except Exception as e:
                     print(e)
