@@ -135,7 +135,7 @@ class Board:
                 try:
                     for ship in opponent.board.ship_locations:
                         if coordinate in opponent.board.hit_locations:
-                            print(f"[{TextColor.RED.value}X{TextColor.DEFAULT.value}]", end="")
+                            print(f"[{TextColor.RED.value}*{TextColor.DEFAULT.value}]", end="")
                             is_not_empty_space = True
                             break
                         if coordinate in opponent.board.miss_locations:
